@@ -23,8 +23,8 @@ chmod -R 777 /var/www/html/storage
 chmod -R 777 /var/www/html/bootstrap/cache
 composer install
 
-php artisan key:generate
-php artisan optimize
+# php artisan key:generate
+# php artisan config:clear
 php artisan migrate --force
 
 #npm i
