@@ -22,7 +22,13 @@ services:
         networks:
             - sail
         depends_on:
-            - mysql
+            - db
+        healthcheck: 
+            test: ["CMD-SHELL", "curl --fail http://localhost/ || exit 1"]
+            interval: 5s
+            timeout: 5s
+            retries: 100
+            start_period: 20s
     vite:
         build:
             context: ./vendor/laravel/sail/runtimes/8.2
@@ -41,7 +47,11 @@ services:
             - '.:/var/www/html'
         networks:
             - sail
-        entrypoint: ["npm", "run", "dev"]
+        depends_on:
+            web:
+                condition: service_healthy
+                restart: true
+        entrypoint: ["/var/www/html/docker/run-vite"]
     worker:
         build:
             dockerfile: Dockerfile
@@ -63,8 +73,12 @@ services:
         networks:
             - sail
         depends_on:
-            - mysql
-    mysql:
+            db:
+                condition: service_started
+            web:
+                condition: service_healthy
+                restart: true
+    db:
         image: 'mysql/mysql-server:8.0'
         ports:
             - '${FORWARD_DB_PORT:-3306}:3306'
@@ -77,16 +91,13 @@ services:
             MYSQL_ALLOW_EMPTY_PASSWORD: 1
         volumes:
             - 'sail-mysql:/var/lib/mysql'
-            - './vendor/laravel/sail/database/mysql/create-testing-database.sh:/docker-entrypoint-initdb.d/10-create-testing-database.sh'
+            # - './docker/create-testing-database:/docker-entrypoint-initdb.d/10-create-testing-database.sh'
         networks:
             - sail
+            # Start of Selection
         healthcheck:
-            test:
-                - CMD
-                - mysqladmin
-                - ping
-                - '-p${DB_PASSWORD}'
-            retries: 3
+            test: ["CMD-SHELL", "mysql -uroot -p${DB_PASSWORD} -e 'SELECT 1;'"]
+            retries: 5
             timeout: 5s
 networks:
     sail:

@@ -1,6 +1,10 @@
 .PHONY: clear
 
 up:
+	@if [ ! -f .env ]; then \
+		echo "An .env file was not found! Please create a .env file before proceeding." && exit 1; \
+	fi
+
 	docker compose up -d
 	@make check-url
 	@echo "Docker Compose services are up and running successfully!"
@@ -9,7 +13,7 @@ check-url:
 	until [ "$$(docker compose exec -it web curl -s -o /dev/null -w "%{http_code}" http://localhost)" -eq "200" ]; do \
 		echo "Waiting for server to be ready..."; \
 		sleep 5; \
-	done; \
+	done;
 	@echo "Success: Server is up and running."
 
 clear:
@@ -25,7 +29,7 @@ ssh-web:
 	@docker compose exec -it web sh
 	
 mysql:
-	@docker compose exec -it mysql -hmysql -uroot -ppassword patpat
+	@docker compose exec -it db mysql -uroot -ppassword patpat
 
 down: 
 	docker compose down --volumes
